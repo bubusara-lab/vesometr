@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ВесоМетр — Контроль массы тела</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <h2 id="modalTitle">Добро пожаловать</h2>
+      <p id="modalSubtitle">Войдите, чтобы получить персональные рекомендации</p>
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchModalTab('login')">Вход</button>
+        <button class="modal-tab" onclick="switchModalTab('register')">Регистрация</button>
+      </div>
+      <div class="field">
+        <label>Логин</label>
+        <input type="text" id="authLogin" placeholder="Введите логин">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="authPassword" placeholder="Введите пароль">
+      </div>
+      <div id="authError" class="modal-error">Неверный логин или пароль</div>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeModal()">Отмена</button>
+        <button class="modal-submit" id="authSubmitBtn" onclick="handleAuth()">Войти</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- ШАПКА -->
+    <header>
+      <div class="logo">Весо<span>Метр</span></div>
+      <button class="auth-btn" id="headerAuthBtn" onclick="openModal()">Войти</button>
+    </header>
+
+    <!-- ЗАГОЛОВОК -->
+    <section class="hero">
+      <h1>Контроль<br><em>массы тела</em></h1>
+      <p>Рассчитайте ИМТ, суточную норму калорий и получите персональные рекомендации по питанию и физической активности.</p>
+    </section>
+
+    <!-- ВКЛАДКИ -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('imt')">Расчёт ИМТ</button>
+      <button class="tab" onclick="switchTab('calories')">Калории</button>
+    </div>
+
+    <!-- ВКЛАДКА: ИМТ -->
+    <div id="tabImt">
+      <div class="card">
+        <div class="card-title">
+          Ваши параметры
+          <span class="badge free">Без регистрации</span>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Рост (см)</label>
+            <input type="number" id="height" placeholder="175" min="100" max="250">
+          </div>
+          <div class="field">
+            <label>Вес (кг)</label>
+            <input type="number" id="weight" placeholder="70" min="30" max="300">
+          </div>
+          <div class="field">
+            <label>Возраст</label>
+            <input type="number" id="age" placeholder="25" min="10" max="120">
+          </div>
+          <div class="field">
+            <label>Пол</label>
+            <div class="radio-group">
+              <div class="radio-btn selected" data-group="gender" data-value="male" onclick="selectRadio(this)">Мужской</div>
+              <div class="radio-btn" data-group="gender" data-value="female" onclick="selectRadio(this)">Женский</div>
+            </div>
+          </div>
+          <div class="field full-width">
+            <label>Тип телосложения <span class="label-note">(влияет на интерпретацию ИМТ)</span></label>
+            <div class="radio-group">
+              <div class="radio-btn" data-group="build" data-value="thin" onclick="selectRadio(this)">
+                Астеник<br><small>тонкая кость</small>
+              </div>
+              <div class="radio-btn selected" data-group="build" data-value="normal" onclick="selectRadio(this)">
+                Нормостеник<br><small>средняя кость</small>
+              </div>
+              <div class="radio-btn" data-group="build" data-value="wide" onclick="selectRadio(this)">
+                Гиперстеник<br><small>крупная кость</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calculateIMT()">Рассчитать ИМТ</button>
+      </div>
+
+      <!-- РЕЗУЛЬТАТЫ ИМТ -->
+      <div class="results" id="imtResults">
+        <div class="result-grid">
+          <div class="stat-card">
+            <div class="stat-label">ИМТ</div>
+            <div class="stat-value" id="imtValue">—</div>
+            <div class="stat-unit">кг/м²</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Категория</div>
+            <div class="stat-value stat-category" id="imtCategory">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Идеальный вес</div>
+            <div class="stat-value" id="idealWeight">—</div>
+            <div class="stat-unit">кг (с учётом телосложения)</div>
+          </div>
+        </div>
+
+        <!-- ШКАЛА ИМТ -->
+        <div class="imt-scale">
+          <div class="imt-scale-title">Шкала ИМТ</div>
+          <div class="scale-bar">
+            <div class="scale-pointer" id="scalePointer" style="left:0%"></div>
+          </div>
+          <div class="scale-labels">
+            <span>16</span>
+            <span>Дефицит</span>
+            <span>Норма</span>
+            <span>Избыток</span>
+            <span>Ожирение</span>
+            <span>40+</span>
+          </div>
+        </div>
+
+        <!-- РЕКОМЕНДАЦИИ -->
+        <div class="card">
+          <div class="card-title">
+            Рекомендации
+            <span class="badge locked" id="recsBadge">🔒 Требуется вход</span>
+          </div>
+          <div id="recsContent">
+            <div class="recs-locked" id="recsLocked">
+              <div class="lock-icon">🔐</div>
+              <p>Персональные рекомендации по снижению, набору или поддержанию веса доступны после входа в аккаунт.</p>
+              <button class="calc-btn btn-centered" onclick="openModal()">Войти / Зарегистрироваться</button>
+            </div>
+            <div class="rec-list hidden" id="recsVisible"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА: КАЛОРИИ -->
+    <div id="tabCalories" class="hidden">
+      <div class="card">
+        <div class="card-title">
+          Суточная норма калорий
+          <span class="badge free">Без регистрации</span>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Рост (см)</label>
+            <input type="number" id="cHeight" placeholder="175" min="100" max="250">
+          </div>
+          <div class="field">
+            <label>Вес (кг)</label>
+            <input type="number" id="cWeight" placeholder="70" min="30" max="300">
+          </div>
+          <div class="field">
+            <label>Возраст</label>
+            <input type="number" id="cAge" placeholder="25" min="10" max="120">
+          </div>
+          <div class="field">
+            <label>Пол</label>
+            <div class="radio-group">
+              <div class="radio-btn selected" data-group="cgender" data-value="male" onclick="selectRadio(this)">Мужской</div>
+              <div class="radio-btn" data-group="cgender" data-value="female" onclick="selectRadio(this)">Женский</div>
+            </div>
+          </div>
+          <div class="field full-width">
+            <label>Уровень активности</label>
+            <div class="radio-group">
+              <div class="radio-btn" data-group="activity" data-value="1.2" onclick="selectRadio(this)">Сидячий<br><small>нет спорта</small></div>
+              <div class="radio-btn selected" data-group="activity" data-value="1.375" onclick="selectRadio(this)">Лёгкий<br><small>1–3 дня/нед</small></div>
+              <div class="radio-btn" data-group="activity" data-value="1.55" onclick="selectRadio(this)">Умеренный<br><small>3–5 дней/нед</small></div>
+              <div class="radio-btn" data-group="activity" data-value="1.725" onclick="selectRadio(this)">Высокий<br><small>6–7 дней/нед</small></div>
+            </div>
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calculateCalories()">Рассчитать</button>
+      </div>
+
+      <div class="results" id="calResults">
+        <div class="result-grid">
+          <div class="stat-card">
+            <div class="stat-label">Поддержание</div>
+            <div class="stat-value stat-sm" id="calMaintain">—</div>
+            <div class="stat-unit">ккал/день</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Для похудения</div>
+            <div class="stat-value stat-sm" id="calDeficit">—</div>
+            <div class="stat-unit">ккал/день (−500)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Для набора</div>
+            <div class="stat-value stat-sm" id="calSurplus">—</div>
+            <div class="stat-unit">ккал/день (+300)</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Макронутриенты (для поддержания)</div>
+          <div class="result-grid">
+            <div class="stat-card">
+              <div class="stat-label">Белки</div>
+              <div class="stat-value stat-sm accent" id="macroProtein">—</div>
+              <div class="stat-unit">г/день</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Жиры</div>
+              <div class="stat-value stat-sm accent2" id="macroFat">—</div>
+              <div class="stat-unit">г/день</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Углеводы</div>
+              <div class="stat-value stat-sm accent3" id="macroCarbs">—</div>
+              <div class="stat-unit">г/день</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <span>ВесоМетр © 2025</span>
+      <span>СРС по ППО2 — Программная инженерия</span>
+    </footer>
+
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/calculator.js"></script>
+</body>
+</html>
